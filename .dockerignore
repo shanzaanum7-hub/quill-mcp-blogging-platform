@@ -1,0 +1,15 @@
+node_modules
+dist
+.env
+.env.local
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+.git
+coverage
+tests/e2e/screenshots
+test-results
+playwright-report
+*.log
+.DS_Store

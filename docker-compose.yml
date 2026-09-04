@@ -1,0 +1,76 @@
+name: quill
+
+volumes:
+  quill_db:
+
+services:
+  api:
+    build:
+      context: .
+      target: api
+    ports:
+      - "3001:3001"
+    volumes:
+      - quill_db:/data/db
+    environment:
+      NODE_ENV: development
+      DATABASE_PATH: /data/db/quill.db
+      SESSION_SECRET: ${SESSION_SECRET}
+      PORT_API: 3001
+      CORS_ORIGINS: http://localhost:5173,http://localhost:4173
+      LOG_LEVEL: debug
+      RATE_LIMIT_API_RPM: 120
+      RATE_LIMIT_MCP_RPM: 60
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  mcp:
+    build:
+      context: .
+      target: mcp
+    ports:
+      - "3002:3002"
+    volumes:
+      - quill_db:/data/db
+    environment:
+      NODE_ENV: development
+      DATABASE_PATH: /data/db/quill.db
+      SESSION_SECRET: ${SESSION_SECRET}
+      PORT_MCP: 3002
+      LOG_LEVEL: debug
+      RATE_LIMIT_MCP_RPM: 60
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      target: web
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  blog:
+    build:
+      context: .
+      target: blog
+    ports:
+      - "4173:80"
+    depends_on:
+      - api
+    restart: unless-stopped
