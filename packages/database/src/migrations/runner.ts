@@ -9,6 +9,14 @@ import { createDatabaseClient } from '../client.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+function getMigrationDirectory(): string {
+  const compiledDirectory = __dirname;
+  if (readdirSync(compiledDirectory).some((file) => file.endsWith('.up.sql'))) {
+    return compiledDirectory;
+  }
+  return path.resolve(compiledDirectory, '../../src/migrations');
+}
+
 const MIGRATION_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS schema_migrations (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,7 +28,7 @@ const MIGRATION_TABLE_SQL = `
 export function runMigrations(db: Database.Database): void {
   db.exec(MIGRATION_TABLE_SQL);
 
-  const migrationDir = __dirname;
+  const migrationDir = getMigrationDirectory();
   const files = readdirSync(migrationDir)
     .filter((file) => file.endsWith('.up.sql'))
     .sort((a, b) => a.localeCompare(b));
@@ -48,7 +56,7 @@ export function runMigrations(db: Database.Database): void {
 }
 
 export function rollbackMigration(db: Database.Database, filename: string): void {
-  const downFile = path.join(__dirname, filename.replace(/\.up\.sql$/, '.down.sql'));
+  const downFile = path.join(getMigrationDirectory(), filename.replace(/\.up\.sql$/, '.down.sql'));
 
   if (!downFile.endsWith('.down.sql')) {
     throw new Error(`Invalid migration name for rollback: ${filename}`);

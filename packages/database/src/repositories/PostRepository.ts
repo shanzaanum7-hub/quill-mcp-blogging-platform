@@ -31,28 +31,28 @@ export type CreatePostData = {
   title: string;
   slug: string;
   content?: string;
-  excerpt?: string;
+  excerpt?: string | null;
   status?: PostStatus;
-  published_at?: string;
-  scheduled_for?: string;
-  seo_title?: string;
-  seo_description?: string;
-  seo_keywords?: string;
-  canonical_url?: string;
+  published_at?: string | null;
+  scheduled_for?: string | null;
+  seo_title?: string | null;
+  seo_description?: string | null;
+  seo_keywords?: string | null;
+  canonical_url?: string | null;
 };
 
 export type UpdatePostData = {
-  title?: string;
+  title?: string | null;
   slug?: string;
-  content?: string;
-  excerpt?: string;
+  content?: string | null;
+  excerpt?: string | null;
   status?: PostStatus;
-  published_at?: string;
-  scheduled_for?: string;
-  seo_title?: string;
-  seo_description?: string;
-  seo_keywords?: string;
-  canonical_url?: string;
+  published_at?: string | null;
+  scheduled_for?: string | null;
+  seo_title?: string | null;
+  seo_description?: string | null;
+  seo_keywords?: string | null;
+  canonical_url?: string | null;
   updated_at: string;
 };
 
@@ -62,6 +62,7 @@ export interface IPostRepository {
   findAllByUser(userId: number, filters: PostFilters): PostRow[];
   countByUser(userId: number, filters: PostFilters): number;
   findPublishedByUsername(username: string, page: number, limit: number): PostRow[];
+  countPublishedByUsername(username: string): number;
   findPublishedBySlug(username: string, slug: string): PostRow | undefined;
   findScheduledDue(): PostRow[];
   create(data: CreatePostData): PostRow;
@@ -139,6 +140,17 @@ export class PostRepository implements IPostRepository {
          WHERE u.username = ? AND p.slug = ? AND p.status = 'published'`
       )
       .get(username, slug) as PostRow | undefined;
+  }
+
+  countPublishedByUsername(username: string): number {
+    const result = this.db
+      .prepare(
+        `SELECT COUNT(*) AS count
+         FROM posts p INNER JOIN users u ON u.id = p.user_id
+         WHERE u.username = ? AND p.status = 'published'`
+      )
+      .get(username) as { count: number };
+    return Number(result.count);
   }
 
   findScheduledDue(): PostRow[] {
