@@ -1,0 +1,5 @@
+DROP TABLE IF EXISTS analytics_events;
+DROP TABLE IF EXISTS posts;
+DROP TABLE IF EXISTS api_keys;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS schema_migrations;

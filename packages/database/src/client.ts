@@ -1,9 +1,8 @@
-/**
- * SQLite database client factory.
- * Implemented in Spec 02 — stub only for Spec 01 build verification.
- */
+import Database from 'better-sqlite3';
 
-// Stub — will be implemented in Spec 02 with better-sqlite3
-export function createDatabaseClient(_path: string): never {
-  throw new Error('Database client not yet implemented. See Spec 02.');
+export function createDatabaseClient(path: string): Database.Database {
+  const db = new Database(path);
+  db.pragma('foreign_keys = ON');
+  db.pragma('journal_mode = WAL');
+  return db;
 }

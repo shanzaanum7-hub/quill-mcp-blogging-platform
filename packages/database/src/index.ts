@@ -1,8 +1,3 @@
-/**
- * @quill/database — barrel export
- * Owns the SQLite client, migration runner, and all repository classes.
- * Implemented in Spec 02.
- */
-
-// Placeholder — implemented in Spec 02
-export {};
+export { createDatabaseClient } from './client.js';
+export { runMigrations, rollbackMigration } from './migrations/runner.js';
+export * from './repositories/index.js';
