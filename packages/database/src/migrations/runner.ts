@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import Database from 'better-sqlite3';
+import type Database from 'better-sqlite3';
 
 import { createDatabaseClient } from '../client.js';
 
@@ -63,5 +63,5 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const databasePath = process.env.DATABASE_PATH ?? path.resolve(process.cwd(), 'quill.db');
   const db = createDatabaseClient(databasePath);
   runMigrations(db);
-  console.log(`Database migrations applied to ${databasePath}`);
+  console.warn(`Database migrations applied to ${databasePath}`);
 }

@@ -6,6 +6,7 @@ import { ApiKeyRepository } from './repositories/ApiKeyRepository.js';
 import { AnalyticsRepository } from './repositories/AnalyticsRepository.js';
 import { PostRepository } from './repositories/PostRepository.js';
 import { UserRepository } from './repositories/UserRepository.js';
+import * as fs from 'node:fs';
 
 function createTestDatabase() {
   const db = createDatabaseClient(':memory:');
@@ -21,7 +22,7 @@ describe('database migration runner', () => {
       .prepare(
         "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
       )
-      .all() as Array<{ name: string }>;
+      .all<{ name: string }>();
 
     expect(tables.map((table) => table.name)).toEqual(
       expect.arrayContaining(['schema_migrations', 'users', 'api_keys', 'posts', 'analytics_events'])
@@ -29,7 +30,7 @@ describe('database migration runner', () => {
 
     const migrationRows = db
       .prepare('SELECT filename FROM schema_migrations ORDER BY id')
-      .all() as Array<{ filename: string }>;
+      .all<{ filename: string }>();
 
     expect(migrationRows.some((row) => row.filename === '001_initial_schema.up.sql')).toBe(true);
   });
@@ -40,7 +41,7 @@ describe('database migration runner', () => {
 
     const rows = db
       .prepare('SELECT filename FROM schema_migrations WHERE filename = ?')
-      .all('001_initial_schema.up.sql') as Array<{ filename: string }>;
+      .all<{ filename: string }>('001_initial_schema.up.sql');
 
     expect(rows).toHaveLength(1);
   });
@@ -224,15 +225,21 @@ describe('database integrity', () => {
     const db = createDatabaseClient(filePath);
 
     try {
-      const journalMode = db.pragma('journal_mode');
-      const foreignKeys = db.pragma('foreign_keys');
+      const journalModeRaw = db.pragma('journal_mode') as unknown;
+      const journalMode = Array.isArray(journalModeRaw)
+        ? (journalModeRaw[0] as { journal_mode?: string }).journal_mode
+        : journalModeRaw;
 
-      expect(Array.isArray(journalMode) ? journalMode[0]?.journal_mode : journalMode).toBe('wal');
-      expect(Array.isArray(foreignKeys) ? foreignKeys[0]?.foreign_keys : foreignKeys).toBe(1);
+      const foreignKeysRaw = db.pragma('foreign_keys') as unknown;
+      const foreignKeys = Array.isArray(foreignKeysRaw)
+        ? (foreignKeysRaw[0] as { foreign_keys?: number }).foreign_keys
+        : foreignKeysRaw;
+
+      expect(journalMode).toBe('wal');
+      expect(foreignKeys).toBe(1);
     } finally {
       db.close();
       // SQLite file cleanup for the WAL validation test.
-      const fs = require('node:fs');
       try {
         fs.rmSync(filePath, { force: true });
       } catch {
