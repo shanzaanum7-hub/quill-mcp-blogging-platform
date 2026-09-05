@@ -19,18 +19,18 @@ describe('database migration runner', () => {
     const db = createTestDatabase();
 
     const tables = db
-      .prepare(
+      .prepare<[], { name: string }>(
         "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
       )
-      .all<{ name: string }>();
+      .all();
 
     expect(tables.map((table) => table.name)).toEqual(
       expect.arrayContaining(['schema_migrations', 'users', 'api_keys', 'posts', 'analytics_events'])
     );
 
     const migrationRows = db
-      .prepare('SELECT filename FROM schema_migrations ORDER BY id')
-      .all<{ filename: string }>();
+      .prepare<[], { filename: string }>('SELECT filename FROM schema_migrations ORDER BY id')
+      .all();
 
     expect(migrationRows.some((row) => row.filename === '001_initial_schema.up.sql')).toBe(true);
   });
@@ -40,8 +40,8 @@ describe('database migration runner', () => {
     runMigrations(db);
 
     const rows = db
-      .prepare('SELECT filename FROM schema_migrations WHERE filename = ?')
-      .all<{ filename: string }>('001_initial_schema.up.sql');
+      .prepare<[string], { filename: string }>('SELECT filename FROM schema_migrations WHERE filename = ?')
+      .all('001_initial_schema.up.sql');
 
     expect(rows).toHaveLength(1);
   });
@@ -225,17 +225,12 @@ describe('database integrity', () => {
     const db = createDatabaseClient(filePath);
 
     try {
-      const journalModeRaw = db.pragma('journal_mode') as unknown;
-      const journalMode = Array.isArray(journalModeRaw)
-        ? (journalModeRaw[0] as { journal_mode?: string }).journal_mode
-        : journalModeRaw;
+      const journalMode = db.pragma('journal_mode', { simple: true });
+      const foreignKeys = db.pragma('foreign_keys', { simple: true });
 
-      const foreignKeysRaw = db.pragma('foreign_keys') as unknown;
-      const foreignKeys = Array.isArray(foreignKeysRaw)
-        ? (foreignKeysRaw[0] as { foreign_keys?: number }).foreign_keys
-        : foreignKeysRaw;
-
+      expect(typeof journalMode).toBe('string');
       expect(journalMode).toBe('wal');
+      expect(typeof foreignKeys).toBe('number');
       expect(foreignKeys).toBe(1);
     } finally {
       db.close();
