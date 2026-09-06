@@ -1,8 +1,10 @@
-/**
- * @quill/services — barrel export
- * All business logic lives here. Implemented in Spec 05.
- * Both @quill/api and @quill/mcp consume this package — never duplicate logic between them.
- */
-
-// Placeholder — implemented in Spec 05
-export {};
+export { AuthService } from './AuthService.js';
+export type { UserPublic } from './AuthService.js';
+export { ApiKeyService } from './ApiKeyService.js';
+export type { ApiKeyPublic, CreateKeyResult } from './ApiKeyService.js';
+export { PostService } from './PostService.js';
+export type { IPostService, PaginatedPosts, PostFull, PostPublic, PostSummary, PublicPostsResult } from './PostService.js';
+export { AnalyticsService } from './AnalyticsService.js';
+export type { AccountAnalyticsResult, PostAnalyticsResult } from './AnalyticsService.js';
+export { createServiceContainer } from './container.js';
+export type { ServiceContainer } from './container.js';

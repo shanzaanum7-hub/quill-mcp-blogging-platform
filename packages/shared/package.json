@@ -16,7 +16,9 @@
     "typecheck": "tsc --noEmit --project tsconfig.json",
     "clean": "node --eval \"require('fs').rmSync('dist', { recursive: true, force: true })\""
   },
-  "dependencies": {},
+  "dependencies": {
+    "zod": "3.25.76"
+  },
   "devDependencies": {
     "typescript": "5.7.2"
   }

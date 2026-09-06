@@ -14,3 +14,24 @@ export type { EnvConfig } from './utils/env.js';
 
 // Types
 export type { PostStatus, AnalyticsRange } from './types/index.js';
+
+export {
+	createApiKeySchema,
+	createPostSchema,
+	listPostsSchema,
+	loginSchema,
+	registerSchema,
+	schedulePostSchema,
+	seoSchema,
+	updatePostSchema,
+} from './schemas/index.js';
+export type {
+	CreateApiKeyData,
+	CreatePostInput,
+	ListPostsInput,
+	LoginData,
+	RegisterData,
+	SchedulePostInput,
+	SeoInput,
+	UpdatePostInput,
+} from './schemas/index.js';

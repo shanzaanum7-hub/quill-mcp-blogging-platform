@@ -18,7 +18,9 @@
   },
   "dependencies": {
     "@quill/database": "workspace:*",
-    "@quill/shared": "workspace:*"
+    "@quill/shared": "workspace:*",
+    "argon2": "0.41.1",
+    "zod": "3.25.76"
   },
   "devDependencies": {
     "typescript": "5.7.2"
