@@ -24,14 +24,14 @@ export async function createApp(config: EnvConfig, services?: ServiceContainer) 
   };
 
   const app = Fastify({ logger: loggerOptions });
-  await registerSecurityHeaders(app, config.NODE_ENV === 'production');
+  registerSecurityHeaders(app, config.NODE_ENV === 'production');
   const db = createDatabaseClient(config.DATABASE_PATH);
   runMigrations(db);
   const container = services ?? createServiceContainer(db);
 
   await app.register(cors, { origin: config.CORS_ORIGINS, credentials: true });
   await app.register(cookie);
-  await app.register(session.default, {
+  void app.register(session.default, {
     secret: config.SESSION_SECRET,
     cookieName: 'quill_session',
     cookie: {
@@ -44,7 +44,7 @@ export async function createApp(config: EnvConfig, services?: ServiceContainer) 
     saveUninitialized: false,
   });
   await app.register(rateLimit, { global: true, max: config.RATE_LIMIT_API_RPM, timeWindow: '1 minute' });
-  await registerAuthRoutes(app, {
+  registerAuthRoutes(app, {
     auth: container.authService,
     apiKeys: container.apiKeyService,
     posts: container.postService,

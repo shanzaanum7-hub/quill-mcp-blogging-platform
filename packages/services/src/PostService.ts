@@ -118,8 +118,15 @@ export class PostService implements IPostService {
     return ensureUniqueSlug(base, existing);
   }
 
-  private full(post: PostRow): PostFull { const { user_id: _userId, ...result } = post; return result; }
-  private summary(post: PostRow): PostSummary { const { user_id: _userId, content: _content, seo_title: _seoTitle, seo_description: _seoDescription, seo_keywords: _seoKeywords, canonical_url: _canonicalUrl, ...result } = post; return result; }
+  private full(post: PostRow): PostFull {
+    const { id, title, slug, content, excerpt, status, published_at, scheduled_for, seo_title, seo_description, seo_keywords, canonical_url, created_at, updated_at } = post;
+    return { id, title, slug, content, excerpt, status, published_at, scheduled_for, seo_title, seo_description, seo_keywords, canonical_url, created_at, updated_at };
+  }
+
+  private summary(post: PostRow): PostSummary {
+    const { id, title, slug, excerpt, status, published_at, scheduled_for, created_at, updated_at } = post;
+    return { id, title, slug, excerpt, status, published_at, scheduled_for, created_at, updated_at };
+  }
   private public(post: PostRow): PostPublic { return { title: post.title, slug: post.slug, excerpt: post.excerpt, published_at: post.published_at, content: post.content, seo_title: post.seo_title, seo_description: post.seo_description }; }
 
   private validate<T>(parse: () => T): T {

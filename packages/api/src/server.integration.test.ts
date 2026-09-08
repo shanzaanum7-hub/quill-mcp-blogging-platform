@@ -14,6 +14,11 @@ const config = {
   LOG_LEVEL: 'silent' as 'info',
 };
 
+type CreatedPostResponse = { data: { id: number; title: string; status: string } };
+type PostListResponse = { data: { posts: unknown[] } };
+type PublicPostsResponse = { data: { posts: unknown[] } };
+type RegisterResponse = { data: Record<string, unknown> };
+
 let apps: FastifyInstance[] = [];
 
 afterEach(async () => {
@@ -46,7 +51,7 @@ describe('REST API', () => {
     const app = await makeApp();
     const response = await app.inject({ method: 'POST', url: '/api/auth/register', payload: { email: 'secure@example.com', username: 'secure', password: 'password123' } });
     expect(response.statusCode).toBe(201);
-    expect(response.json().data).not.toHaveProperty('password_hash');
+    expect(response.json<RegisterResponse>().data).not.toHaveProperty('password_hash');
     expect(response.headers['x-content-type-options']).toBe('nosniff');
     expect(response.headers['x-frame-options']).toBe('DENY');
     expect(response.headers['content-security-policy']).toContain("default-src 'self'");
@@ -69,10 +74,10 @@ describe('REST API', () => {
     const cookie = await registerAndLogin(app, 'alice@example.com', 'alice');
     const created = await app.inject({ method: 'POST', url: '/api/posts', headers: { cookie }, payload: { title: 'Hello API', content: 'Content' } });
     expect(created.statusCode).toBe(201);
-    expect(created.json().data).toMatchObject({ title: 'Hello API', status: 'draft' });
+    expect(created.json<CreatedPostResponse>().data).toMatchObject({ title: 'Hello API', status: 'draft' });
     const listed = await app.inject({ method: 'GET', url: '/api/posts', headers: { cookie } });
     expect(listed.statusCode).toBe(200);
-    expect(listed.json().data.posts).toHaveLength(1);
+    expect(listed.json<PostListResponse>().data.posts).toHaveLength(1);
   });
 
   it('prevents a different authenticated user from reading another post', async () => {
@@ -80,7 +85,7 @@ describe('REST API', () => {
     const aliceCookie = await registerAndLogin(app, 'alice@example.com', 'alice');
     const created = await app.inject({ method: 'POST', url: '/api/posts', headers: { cookie: aliceCookie }, payload: { title: 'Private', content: 'Secret' } });
     const bobCookie = await registerAndLogin(app, 'bob@example.com', 'bob');
-    const response = await app.inject({ method: 'GET', url: `/api/posts/${created.json().data.id}`, headers: { cookie: bobCookie } });
+    const response = await app.inject({ method: 'GET', url: `/api/posts/${created.json<CreatedPostResponse>().data.id}`, headers: { cookie: bobCookie } });
     expect(response.statusCode).toBe(403);
     expect(response.json()).toMatchObject({ success: false, error: { code: 'FORBIDDEN' } });
   });
@@ -89,7 +94,7 @@ describe('REST API', () => {
     const app = await makeApp();
     const aliceCookie = await registerAndLogin(app, 'owner@example.com', 'owner');
     const created = await app.inject({ method: 'POST', url: '/api/posts', headers: { cookie: aliceCookie }, payload: { title: 'Private', content: 'Secret' } });
-    const postId = created.json().data.id as number;
+    const postId = created.json<CreatedPostResponse>().data.id;
     const bobCookie = await registerAndLogin(app, 'intruder@example.com', 'intruder');
     for (const request of [
       { method: 'PUT' as const, url: `/api/posts/${postId}`, payload: { title: 'Stolen' } },
@@ -117,10 +122,10 @@ describe('REST API', () => {
     const cookie = await registerAndLogin(app, 'alice@example.com', 'alice');
     const created = await app.inject({ method: 'POST', url: '/api/posts', headers: { cookie }, payload: { title: 'Public Post', content: 'Visible' } });
     const before = await app.inject({ method: 'GET', url: '/api/public/alice/posts' });
-    expect(before.json().data.posts).toHaveLength(0);
-    await app.inject({ method: 'POST', url: `/api/posts/${created.json().data.id}/publish`, headers: { cookie } });
+    expect(before.json<PublicPostsResponse>().data.posts).toHaveLength(0);
+    await app.inject({ method: 'POST', url: `/api/posts/${created.json<CreatedPostResponse>().data.id}/publish`, headers: { cookie } });
     const after = await app.inject({ method: 'GET', url: '/api/public/alice/posts' });
     expect(after.statusCode).toBe(200);
-    expect(after.json().data.posts).toHaveLength(1);
+    expect(after.json<PublicPostsResponse>().data.posts).toHaveLength(1);
   });
 });
