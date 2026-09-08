@@ -32,7 +32,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: RouteDeps): void 
     const data = loginSchema.parse(request.body);
     const user = await deps.auth.login(data);
     await request.session.regenerate();
-    (request.session as unknown as { data: SessionData }).data = {
+    request.session.data = {
       userId: user.id,
       email: user.email,
       username: user.username,

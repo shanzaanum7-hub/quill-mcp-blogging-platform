@@ -1,7 +1,7 @@
 import Fastify, { type FastifyServerOptions } from 'fastify';
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
-import session from '@fastify/session';
+import { default as session } from '@fastify/session';
 import rateLimit from '@fastify/rate-limit';
 import { AppError, type EnvConfig } from '@quill/shared';
 import { ZodError } from 'zod';
@@ -31,7 +31,7 @@ export async function createApp(config: EnvConfig, services?: ServiceContainer) 
 
   await app.register(cors, { origin: config.CORS_ORIGINS, credentials: true });
   await app.register(cookie);
-  await app.register(session, {
+  await app.register(session.default, {
     secret: config.SESSION_SECRET,
     cookieName: 'quill_session',
     cookie: {

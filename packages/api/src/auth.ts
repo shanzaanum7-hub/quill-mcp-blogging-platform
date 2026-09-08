@@ -20,15 +20,19 @@ declare module 'fastify' {
   interface FastifyRequest {
     auth: AuthContext;
   }
+
+  interface Session {
+    data?: SessionData;
+  }
 }
 
 export async function requireSession(request: FastifyRequest, _reply: FastifyReply): Promise<void> {
-  const session = (request.session as unknown as { data?: SessionData }).data;
-  if (!session?.userId || !Number.isInteger(session.userId) || Date.now() - session.createdAt > SESSION_TTL_MS) {
+  const sessionData = request.session.data;
+  if (!sessionData?.userId || !Number.isInteger(sessionData.userId) || Date.now() - sessionData.createdAt > SESSION_TTL_MS) {
     await request.session.destroy();
     throw new AppError('UNAUTHORIZED', 'Authentication required', 401);
   }
-  request.auth = { userId: session.userId, authMethod: 'session' };
+  request.auth = { userId: sessionData.userId, authMethod: 'session' };
 }
 
 export function requireApiKey(apiKeys: ApiKeyService) {
