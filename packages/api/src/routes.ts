@@ -1,7 +1,7 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest, HookHandlerDoneFunction } from 'fastify';
 import { AppError, createApiKeySchema, createPostSchema, listPostsSchema, loginSchema, registerSchema, schedulePostSchema, seoSchema, updatePostSchema } from '@quill/shared';
 import type { AuthService, ApiKeyService, AnalyticsService, PostService } from '@quill/services';
-import { requireSession, type SessionData } from './auth.js';
+import { requireSession } from './auth.js';
 
 type RouteDeps = {
   auth: AuthService;
@@ -10,6 +10,10 @@ type RouteDeps = {
   analytics: AnalyticsService;
   rateLimitApiRpm: number;
 };
+
+function sessionPreHandler(request: FastifyRequest, reply: FastifyReply, done: HookHandlerDoneFunction): void {
+  void requireSession(request, reply).then(() => done(), (error: unknown) => done(error instanceof Error ? error : new Error(String(error))));
+}
 
 function routeId(request: { params: unknown }): number {
   const id = Number((request.params as { id?: string }).id);
@@ -41,80 +45,80 @@ export function registerAuthRoutes(app: FastifyInstance, deps: RouteDeps): void 
     return reply.send({ success: true, data: user });
   });
 
-  app.post('/api/auth/logout', { preHandler: requireSession }, async (request, reply) => {
+  app.post('/api/auth/logout', { preHandler: sessionPreHandler }, async (request, reply) => {
     await request.session.destroy();
     return reply.clearCookie('session').send({ success: true });
   });
 
-  app.get('/api/auth/me', { preHandler: requireSession }, async (request, reply) => {
+  app.get('/api/auth/me', { preHandler: sessionPreHandler }, async (request, reply) => {
     const user = deps.auth.getUserById(request.auth.userId);
     return reply.send({ success: true, data: user });
   });
 
-  app.get('/api/keys', { preHandler: requireSession }, async (request, reply) => {
+  app.get('/api/keys', { preHandler: sessionPreHandler }, async (request, reply) => {
     return reply.send({ success: true, data: deps.apiKeys.listKeys(request.auth.userId) });
   });
 
-  app.post('/api/keys', { preHandler: requireSession }, async (request, reply) => {
+  app.post('/api/keys', { preHandler: sessionPreHandler }, async (request, reply) => {
     const { name } = createApiKeySchema.parse(request.body);
     const key = deps.apiKeys.createKey(request.auth.userId, name);
     return reply.status(201).send({ success: true, data: key });
   });
 
-  app.delete('/api/keys/:id', { preHandler: requireSession }, async (request, reply) => {
+  app.delete('/api/keys/:id', { preHandler: sessionPreHandler }, async (request, reply) => {
     deps.apiKeys.revokeKey(request.auth.userId, routeId(request));
     return reply.send({ success: true });
   });
 
-  app.get('/api/posts', { preHandler: requireSession }, async (request, reply) => {
+  app.get('/api/posts', { preHandler: sessionPreHandler }, async (request, reply) => {
     const filters = listPostsSchema.parse(request.query);
     return reply.send({ success: true, data: deps.posts.listPosts(request.auth.userId, filters) });
   });
 
-  app.post('/api/posts', { preHandler: requireSession }, async (request, reply) => {
+  app.post('/api/posts', { preHandler: sessionPreHandler }, async (request, reply) => {
     const data = createPostSchema.parse(request.body);
     return reply.status(201).send({ success: true, data: deps.posts.createPost(request.auth.userId, data) });
   });
 
-  app.get('/api/posts/:id', { preHandler: requireSession }, async (request, reply) => {
+  app.get('/api/posts/:id', { preHandler: sessionPreHandler }, async (request, reply) => {
     return reply.send({ success: true, data: deps.posts.getPost(request.auth.userId, routeId(request)) });
   });
 
-  app.put('/api/posts/:id', { preHandler: requireSession }, async (request, reply) => {
+  app.put('/api/posts/:id', { preHandler: sessionPreHandler }, async (request, reply) => {
     const data = updatePostSchema.parse(request.body);
     return reply.send({ success: true, data: deps.posts.updatePost(request.auth.userId, routeId(request), data) });
   });
 
-  app.delete('/api/posts/:id', { preHandler: requireSession }, async (request, reply) => {
+  app.delete('/api/posts/:id', { preHandler: sessionPreHandler }, async (request, reply) => {
     deps.posts.deletePost(request.auth.userId, routeId(request));
     return reply.send({ success: true });
   });
 
-  app.post('/api/posts/:id/publish', { preHandler: requireSession }, async (request, reply) => {
+  app.post('/api/posts/:id/publish', { preHandler: sessionPreHandler }, async (request, reply) => {
     return reply.send({ success: true, data: deps.posts.publishPost(request.auth.userId, routeId(request)) });
   });
 
-  app.post('/api/posts/:id/unpublish', { preHandler: requireSession }, async (request, reply) => {
+  app.post('/api/posts/:id/unpublish', { preHandler: sessionPreHandler }, async (request, reply) => {
     return reply.send({ success: true, data: deps.posts.unpublishPost(request.auth.userId, routeId(request)) });
   });
 
-  app.post('/api/posts/:id/schedule', { preHandler: requireSession }, async (request, reply) => {
+  app.post('/api/posts/:id/schedule', { preHandler: sessionPreHandler }, async (request, reply) => {
     const { scheduled_for: scheduledFor } = schedulePostSchema.parse(request.body);
     return reply.send({ success: true, data: deps.posts.schedulePost(request.auth.userId, routeId(request), scheduledFor) });
   });
 
-  app.put('/api/posts/:id/seo', { preHandler: requireSession }, async (request, reply) => {
+  app.put('/api/posts/:id/seo', { preHandler: sessionPreHandler }, async (request, reply) => {
     const data = seoSchema.parse(request.body);
     return reply.send({ success: true, data: deps.posts.manageSeo(request.auth.userId, routeId(request), data) });
   });
 
-  app.get('/api/analytics', { preHandler: requireSession }, async (request, reply) => {
+  app.get('/api/analytics', { preHandler: sessionPreHandler }, async (request, reply) => {
     const range = ((request.query as { range?: string }).range ?? '30d');
     if (!['7d', '30d', '90d', 'all'].includes(range)) throw new AppError('VALIDATION_ERROR', 'Invalid analytics range', 400);
     return reply.send({ success: true, data: deps.analytics.getAccountAnalytics(request.auth.userId, range as '7d' | '30d' | '90d' | 'all') });
   });
 
-  app.get('/api/analytics/:postId', { preHandler: requireSession }, async (request, reply) => {
+  app.get('/api/analytics/:postId', { preHandler: sessionPreHandler }, async (request, reply) => {
     const postId = Number((request.params as { postId: string }).postId);
     if (!Number.isInteger(postId) || postId < 1) throw new AppError('VALIDATION_ERROR', 'Invalid resource ID', 400);
     const range = ((request.query as { range?: string }).range ?? '30d');
