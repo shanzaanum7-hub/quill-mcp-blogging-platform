@@ -131,6 +131,9 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: 1.12.3
         version: 1.12.3
+      '@quill/database':
+        specifier: workspace:^
+        version: link:../database
       '@quill/services':
         specifier: workspace:*
         version: link:../services
