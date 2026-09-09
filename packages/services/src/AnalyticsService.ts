@@ -3,9 +3,22 @@ import type { IAnalyticsRepository, IPostRepository } from '@quill/database';
 
 export type AccountAnalyticsResult = { total_views: number; unique_views: number; top_posts: Array<{ post_id: number; title: string; slug: string; total_views: number; unique_views: number }>; range: AnalyticsRange };
 export type PostAnalyticsResult = { post_id: number; title: string; slug: string; total_views: number; unique_views: number; range: AnalyticsRange };
+export type PublicViewMetadata = { referrer?: string; userAgent?: string };
 
 export class AnalyticsService {
   constructor(private readonly analytics: IAnalyticsRepository, private readonly posts: IPostRepository) {}
+
+  recordPublicView(username: string, slug: string, metadata: PublicViewMetadata = {}): void {
+    const post = this.posts.findPublishedBySlug(username, slug);
+    if (!post) return;
+    this.analytics.insert({
+      post_id: post.id,
+      user_id: post.user_id,
+      event_type: 'page_view',
+      referrer: metadata.referrer ?? null,
+      user_agent: metadata.userAgent ?? null,
+    });
+  }
 
   getAccountAnalytics(userId: number, range: AnalyticsRange): AccountAnalyticsResult {
     const bounds = this.bounds(range);

@@ -17,6 +17,7 @@ const config = {
 type CreatedPostResponse = { data: { id: number; title: string; status: string } };
 type PostListResponse = { data: { posts: unknown[] } };
 type PublicPostsResponse = { data: { posts: unknown[] } };
+type AnalyticsResponse = { data: { total_views: number; unique_views: number } };
 type RegisterResponse = { data: Record<string, unknown> };
 
 let apps: FastifyInstance[] = [];
@@ -127,5 +128,34 @@ describe('REST API', () => {
     const after = await app.inject({ method: 'GET', url: '/api/public/alice/posts' });
     expect(after.statusCode).toBe(200);
     expect(after.json<PublicPostsResponse>().data.posts).toHaveLength(1);
+  });
+
+  it('records analytics for a successful public published post view', async () => {
+    const app = await makeApp();
+    const cookie = await registerAndLogin(app, 'views@example.com', 'views');
+    const created = await app.inject({ method: 'POST', url: '/api/posts', headers: { cookie }, payload: { title: 'Viewed Post', content: 'Visible' } });
+    const postId = created.json<CreatedPostResponse>().data.id;
+    await app.inject({ method: 'POST', url: `/api/posts/${postId}/publish`, headers: { cookie } });
+
+    const viewed = await app.inject({ method: 'GET', url: '/api/public/views/posts/viewed-post', headers: { referer: 'https://example.com', 'user-agent': 'vitest' } });
+    expect(viewed.statusCode).toBe(200);
+    const analytics = await app.inject({ method: 'GET', url: `/api/analytics/${postId}`, headers: { cookie } });
+    expect(analytics.statusCode).toBe(200);
+    expect(analytics.json<AnalyticsResponse>().data).toMatchObject({ total_views: 1, unique_views: 0 });
+  });
+
+  it('does not record analytics for draft or nonexistent public posts', async () => {
+    const app = await makeApp();
+    const cookie = await registerAndLogin(app, 'unpublished@example.com', 'unpublished');
+    const created = await app.inject({ method: 'POST', url: '/api/posts', headers: { cookie }, payload: { title: 'Draft Post', content: 'Hidden' } });
+    const postId = created.json<CreatedPostResponse>().data.id;
+
+    const draft = await app.inject({ method: 'GET', url: '/api/public/unpublished/posts/draft-post' });
+    expect(draft.statusCode).toBe(404);
+    const nonexistent = await app.inject({ method: 'GET', url: '/api/public/unpublished/posts/missing-post' });
+    expect(nonexistent.statusCode).toBe(404);
+    const analytics = await app.inject({ method: 'GET', url: `/api/analytics/${postId}`, headers: { cookie } });
+    expect(analytics.statusCode).toBe(200);
+    expect(analytics.json<AnalyticsResponse>().data).toMatchObject({ total_views: 0, unique_views: 0 });
   });
 });
