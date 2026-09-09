@@ -136,6 +136,19 @@ export function registerAuthRoutes(app: FastifyInstance, deps: RouteDeps): void 
 
   app.get('/api/public/:username/posts/:slug', { config: { rateLimit: { max: 60, timeWindow: '1 minute' } } }, async (request, reply) => {
     const params = request.params as { username: string; slug: string };
-    return reply.send({ success: true, data: deps.posts.getPublicPost(params.username, params.slug) });
+    const post = deps.posts.getPublicPost(params.username, params.slug);
+    const referrer = typeof request.headers.referer === 'string'
+      ? request.headers.referer
+      : typeof request.headers.referrer === 'string' ? request.headers.referrer : undefined;
+    const userAgent = typeof request.headers['user-agent'] === 'string' ? request.headers['user-agent'] : undefined;
+    try {
+      deps.analytics.recordPublicView(params.username, params.slug, {
+        ...(referrer === undefined ? {} : { referrer }),
+        ...(userAgent === undefined ? {} : { userAgent }),
+      });
+    } catch (error) {
+      request.log.error(error, 'Failed to record public post view');
+    }
+    return reply.send({ success: true, data: post });
   });
 }
