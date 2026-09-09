@@ -36,7 +36,11 @@ export class AnalyticsService {
   private bounds(range: AnalyticsRange): { from: string; to: string } {
     const to = new Date();
     const from = new Date(to);
-    if (range !== 'all') from.setUTCDate(from.getUTCDate() - ({ '7d': 7, '30d': 30, '90d': 90 }[range] ?? 30));
+    if (range !== 'all') {
+      from.setUTCDate(from.getUTCDate() - ({ '7d': 7, '30d': 30, '90d': 90 }[range] ?? 30));
+    } else {
+      from.setTime(0);
+    }
     return { from: from.toISOString(), to: to.toISOString() };
   }
 }
