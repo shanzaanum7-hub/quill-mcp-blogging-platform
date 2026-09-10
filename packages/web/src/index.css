@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #07374B;
+  background-color: #F3FBFC;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(178, 226, 249, 0.35), transparent 28%),
+    linear-gradient(180deg, #f5fbfc 0%, #edf8f9 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+@layer components {
+  .app-shell {
+    @apply min-h-screen bg-soft-bg text-primary;
+  }
+
+  .panel {
+    @apply rounded-2xl border border-[#D5EDF1] bg-white shadow-panel;
+  }
+
+  .page-title {
+    @apply text-3xl font-bold tracking-tight text-primary;
+  }
+
+  .section-label {
+    @apply text-xs font-semibold uppercase tracking-[0.14em] text-primary/70;
+  }
+
+  .metric-card {
+    @apply panel p-5 transition-transform duration-200 hover:-translate-y-0.5;
+  }
+
+  .nav-item {
+    @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-primary/80 transition-colors duration-200 hover:bg-accent-soft hover:text-primary;
+  }
+
+  .nav-item-active {
+    @apply nav-item bg-[#E4F4F6] text-primary ring-1 ring-[#B7E3E8];
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-xl bg-[#F1EBFF] px-4 py-2.5 text-sm font-semibold text-primary transition-colors duration-200 hover:bg-[#E5DDFB] focus:outline-none focus:ring-2 focus:ring-lavender/40 focus:ring-offset-2;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center rounded-xl border border-[#D9E8EC] bg-white px-4 py-2.5 text-sm font-semibold text-primary transition-colors duration-200 hover:bg-accent-soft focus:outline-none focus:ring-2 focus:ring-sky/40 focus:ring-offset-2;
+  }
+
+  .input-field {
+    @apply w-full rounded-xl border border-[#C5DDE2] bg-white px-3 py-2.5 text-sm text-primary placeholder:text-primary/45 focus:border-primary-hover focus:outline-none focus:ring-2 focus:ring-sky/50;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold;
+  }
+}
