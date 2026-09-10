@@ -41,6 +41,21 @@ async function registerAndLogin(app: FastifyInstance, email: string, username: s
 }
 
 describe('REST API', () => {
+  it('serves the OpenAPI document and Swagger UI', async () => {
+    const app = await makeApp();
+    const spec = await app.inject({ method: 'GET', url: '/openapi.json' });
+    expect(spec.statusCode).toBe(200);
+    expect(spec.json()).toMatchObject({ openapi: '3.0.3', info: { title: 'Quill REST API' } });
+    expect(spec.json().paths).toHaveProperty('/api/analytics');
+
+    const docs = await app.inject({ method: 'GET', url: '/docs' });
+    expect(docs.statusCode).toBe(302);
+    expect(docs.headers.location).toBe('./docs/static/index.html');
+    const docsPage = await app.inject({ method: 'GET', url: '/docs/static/index.html' });
+    expect(docsPage.statusCode).toBe(200);
+    expect(docsPage.headers['content-type']).toContain('text/html');
+  });
+
   it('requires a session for dashboard posts', async () => {
     const app = await makeApp();
     const response = await app.inject({ method: 'GET', url: '/api/posts' });
@@ -137,8 +152,13 @@ describe('REST API', () => {
     const postId = created.json<CreatedPostResponse>().data.id;
     await app.inject({ method: 'POST', url: `/api/posts/${postId}/publish`, headers: { cookie } });
 
+    const blog = await app.inject({ method: 'GET', url: '/api/public/views/posts' });
+    expect(blog.statusCode).toBe(200);
+    expect(blog.json<PublicPostsResponse>().data.posts).toHaveLength(1);
+
     const viewed = await app.inject({ method: 'GET', url: '/api/public/views/posts/viewed-post', headers: { referer: 'https://example.com', 'user-agent': 'vitest' } });
     expect(viewed.statusCode).toBe(200);
+    expect(viewed.json()).toMatchObject({ success: true, data: { title: 'Viewed Post', slug: 'viewed-post' } });
     const analytics = await app.inject({ method: 'GET', url: `/api/analytics/${postId}`, headers: { cookie } });
     expect(analytics.statusCode).toBe(200);
     expect(analytics.json<AnalyticsResponse>().data).toMatchObject({ total_views: 1, unique_views: 0 });

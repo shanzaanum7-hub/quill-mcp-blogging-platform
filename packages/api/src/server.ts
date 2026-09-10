@@ -9,6 +9,9 @@ import { createDatabaseClient, runMigrations } from '@quill/database';
 import { createServiceContainer, type ServiceContainer } from '@quill/services';
 import { registerAuthRoutes } from './routes.js';
 import { registerSecurityHeaders } from './securityHeaders.js';
+import swagger from '@fastify/swagger';
+import swaggerUi from '@fastify/swagger-ui';
+import { openApiDocument } from './openapi.js';
 
 /**
  * Creates and configures the Fastify application instance.
@@ -28,6 +31,13 @@ export async function createApp(config: EnvConfig, services?: ServiceContainer) 
   const db = createDatabaseClient(config.DATABASE_PATH);
   runMigrations(db);
   const container = services ?? createServiceContainer(db);
+
+  await app.register(swagger, {
+    mode: 'static',
+    specification: { document: openApiDocument },
+  });
+  await app.register(swaggerUi, { routePrefix: '/docs' });
+  app.get('/openapi.json', async (_request, reply) => reply.send(app.swagger()));
 
   await app.register(cors, { origin: config.CORS_ORIGINS, credentials: true });
   await app.register(cookie);
