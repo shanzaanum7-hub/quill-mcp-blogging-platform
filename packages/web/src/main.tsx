@@ -1,15 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-
-// Placeholder app — full implementation in Spec 08
-function App() {
-  return (
-    <div style={{ fontFamily: 'system-ui, sans-serif', padding: '2rem' }}>
-      <h1>Quill Dashboard</h1>
-      <p>Foundation scaffold — implementation begins in Spec 08.</p>
-    </div>
-  );
-}
+import App from './App';
+import './index.css';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
