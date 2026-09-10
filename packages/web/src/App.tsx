@@ -149,26 +149,6 @@ const fallbackKeys: ApiKeyItem[] = [
   { id: 2, name: 'Claude Code', key_prefix: 'quill_7b31', last_used_at: null, revoked: false, created_at: '2026-09-07T00:00:00.000Z' },
 ];
 
-const fallbackPublicPosts: PublicPostsResult = {
-  author: {
-    username: 'samia',
-    display_name: 'Samia L.',
-    bio: 'Writer, editor, and systems-minded publishing strategist.',
-  },
-  posts: [
-    {
-      title: 'Designing Better Onboarding Flows',
-      slug: 'designing-better-onboarding-flows',
-      excerpt: 'A practical guide to reducing drop-off and improving activation for new readers.',
-      published_at: '2026-09-08T00:00:00.000Z',
-      content: '# Designing Better Onboarding Flows\n\nGreat onboarding starts with clarity, context, and a path to value.\n\n## What to improve\n- Make the first step obvious.\n- Explain the next action clearly.\n- Reduce friction before the reader is asked to commit.',
-      seo_title: 'Designing Better Onboarding Flows',
-      seo_description: 'A practical guide to reducing drop-off and improving activation for new readers.',
-    },
-  ],
-  pagination: { page: 1, limit: 10, total: 1, totalPages: 1 },
-};
-
 function App() {
   return (
     <BrowserRouter>
@@ -196,7 +176,7 @@ function ProtectedLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const title = routeTitles[location.pathname] ?? 'Dashboard';
-  const [me, setMe] = useState<AccountUser>(fallbackAccount);
+  const [me, setMe] = useState<AccountUser | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -209,7 +189,7 @@ function ProtectedLayout() {
         }
       } catch {
         if (active) {
-          setMe(fallbackAccount);
+          navigate('/login', { replace: true });
         }
       }
     };
@@ -219,7 +199,11 @@ function ProtectedLayout() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [navigate]);
+
+  if (!me) {
+    return null;
+  }
 
   const handleLogout = async () => {
     try {
@@ -1458,8 +1442,9 @@ function SignupPage() {
 
 function PublicBlogPage() {
   const { username } = useParams();
-  const [postsResult, setPostsResult] = useState<PublicPostsResult>(fallbackPublicPosts);
+  const [postsResult, setPostsResult] = useState<PublicPostsResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -1469,10 +1454,12 @@ function PublicBlogPage() {
         const data = await apiRequest<PublicPostsResult>(`/public/${username}/posts`);
         if (active) {
           setPostsResult(data);
+          setError(null);
         }
       } catch {
         if (active) {
-          setPostsResult(fallbackPublicPosts);
+          setPostsResult(null);
+          setError('This public blog could not be found or has no published posts yet.');
         }
       } finally {
         if (active) {
@@ -1493,13 +1480,15 @@ function PublicBlogPage() {
       <div className="mx-auto max-w-5xl">
         <header className="mb-8 rounded-2xl border border-[#D5EDF1] bg-white p-6 shadow-panel">
           <p className="section-label">Public blog</p>
-          <h1 className="mt-2 text-3xl font-bold text-primary">{postsResult.author.display_name ?? postsResult.author.username}</h1>
-          <p className="mt-3 max-w-2xl text-sm text-primary/70">{postsResult.author.bio}</p>
+          <h1 className="mt-2 text-3xl font-bold text-primary">{postsResult?.author.display_name ?? postsResult?.author.username ?? username ?? 'Author'}</h1>
+          <p className="mt-3 max-w-2xl text-sm text-primary/70">{postsResult?.author.bio ?? 'No author bio available.'}</p>
         </header>
 
         {loading ? (
           <div className="rounded-2xl border border-dashed border-[#B7E3E8] bg-[#F4FBFD] p-6 text-sm text-primary/70">Loading posts�</div>
-        ) : (
+        ) : error ? (
+          <div className="rounded-2xl border border-[#D8EAF1] bg-[#F4FBFD] p-6 text-sm text-primary/70">{error}</div>
+        ) : postsResult?.posts.length ? (
           <div className="space-y-4">
             {postsResult.posts.map((post) => (
               <article key={post.slug} className="panel p-6">
@@ -1517,6 +1506,10 @@ function PublicBlogPage() {
               </article>
             ))}
           </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-[#B7E3E8] bg-[#F4FBFD] p-6 text-sm text-primary/70">
+            No published posts are available for this author yet.
+          </div>
         )}
       </div>
     </div>
@@ -1527,6 +1520,7 @@ function PublicPostPage() {
   const { username, slug } = useParams();
   const [post, setPost] = useState<PublicPost | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -1536,10 +1530,12 @@ function PublicPostPage() {
         const data = await apiRequest<PublicPost>(`/public/${username}/posts/${slug}`);
         if (active) {
           setPost(data);
+          setError(null);
         }
       } catch {
         if (active) {
-          setPost(fallbackPublicPosts.posts[0]);
+          setPost(null);
+          setError('This public post could not be found.');
         }
       } finally {
         if (active) {
@@ -1564,6 +1560,8 @@ function PublicPostPage() {
 
         {loading ? (
           <div className="rounded-2xl border border-dashed border-[#B7E3E8] bg-[#F4FBFD] p-6 text-sm text-primary/70">Loading article�</div>
+        ) : error ? (
+          <div className="rounded-2xl border border-[#D8EAF1] bg-[#F4FBFD] p-6 text-sm text-primary/70">{error}</div>
         ) : post ? (
           <article className="panel overflow-hidden p-6 sm:p-8">
             <p className="section-label">Article</p>
