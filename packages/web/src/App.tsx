@@ -364,7 +364,9 @@ function DashboardPage() {
             </p>
           </div>
           <div className="flex gap-3">
-            <button className="btn-secondary bg-white/10 text-white hover:bg-white/20">View newsletter</button>
+            <button className="btn-secondary cursor-not-allowed bg-white/10 text-white opacity-60" disabled title="Newsletter is not available yet" type="button">
+              View newsletter
+            </button>
             <Link to="/create-post" className="btn-primary bg-accent text-primary hover:bg-[#72d6ca]">
               Create post
             </Link>
@@ -458,7 +460,13 @@ function DashboardPage() {
                 <div key={item.title} className="rounded-2xl border border-[#DCECF0] bg-[#F8FCFE] p-4">
                   <h4 className="font-semibold text-primary">{item.title}</h4>
                   <p className="mt-1 text-sm text-primary/65">{item.description}</p>
-                  <button className="mt-3 btn-secondary w-full">{item.action}</button>
+                  {item.to ? (
+                    <Link className="mt-3 btn-secondary w-full" to={item.to}>{item.action}</Link>
+                  ) : (
+                    <button className="mt-3 btn-secondary w-full cursor-not-allowed opacity-60" disabled title="Team and roles management is not available yet" type="button">
+                      {item.action}
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -842,7 +850,7 @@ function CreatePostPage() {
 
 function AnalyticsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [analytics, setAnalytics] = useState<AccountAnalytics>(fallbackAnalytics);
+  const [analytics, setAnalytics] = useState<AccountAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -865,8 +873,8 @@ function AnalyticsPage() {
         }
       } catch {
         if (active) {
-          setAnalytics(fallbackAnalytics);
-          setError('Live analytics are temporarily unavailable, so the latest cached metrics are displayed.');
+          setAnalytics(null);
+          setError('Live analytics are temporarily unavailable.');
         }
       } finally {
         if (active) {
@@ -891,18 +899,18 @@ function AnalyticsPage() {
       <section className="grid gap-4 md:grid-cols-3">
         <article className="metric-card bg-[#F0FCFB]">
           <p className="text-sm text-primary/70">Audience growth</p>
-          <div className="mt-3 text-3xl font-bold text-primary">+24.8%</div>
-          <p className="mt-3 text-sm text-primary/65">New readers this {range === '30d' ? 'month' : range === '7d' ? 'week' : range === 'all' ? 'period' : 'quarter'}</p>
+          <div className="mt-3 text-3xl font-bold text-primary">Not available</div>
+          <p className="mt-3 text-sm text-primary/65">The API does not provide comparison data.</p>
         </article>
         <article className="metric-card bg-[#F4FAFF]">
           <p className="text-sm text-primary/70">Average time</p>
-          <div className="mt-3 text-3xl font-bold text-primary">6m 18s</div>
-          <p className="mt-3 text-sm text-primary/65">Across all published posts</p>
+          <div className="mt-3 text-3xl font-bold text-primary">Not available</div>
+          <p className="mt-3 text-sm text-primary/65">The API does not provide reading-time data.</p>
         </article>
         <article className="metric-card bg-[#F4F1FB]">
           <p className="text-sm text-primary/70">Returning readers</p>
-          <div className="mt-3 text-3xl font-bold text-primary">41%</div>
-          <p className="mt-3 text-sm text-primary/65">Compared to the last cycle</p>
+          <div className="mt-3 text-3xl font-bold text-primary">Not available</div>
+          <p className="mt-3 text-sm text-primary/65">The API does not provide return-visitor data.</p>
         </article>
       </section>
 
@@ -929,6 +937,8 @@ function AnalyticsPage() {
 
           {loading ? (
             <div className="rounded-2xl border border-dashed border-[#B7E3E8] bg-[#F4FBFD] p-6 text-sm text-primary/70">Loading analytics�</div>
+          ) : !analytics ? (
+            <div className="rounded-2xl border border-dashed border-[#B7E3E8] bg-[#F4FBFD] p-6 text-sm text-primary/70">Analytics data is unavailable.</div>
           ) : (
             <div className="rounded-2xl border border-[#D9EDF1] bg-[#F8FCFD] p-4">
               <div className="mb-4 flex items-end justify-between text-sm text-primary/70">
@@ -960,7 +970,7 @@ function AnalyticsPage() {
           <p className="section-label">Top content</p>
           <h3 className="mt-1 text-xl font-bold text-primary">Best performing posts</h3>
           <div className="mt-5 space-y-4">
-            {analytics.top_posts.map((item) => (
+            {analytics?.top_posts.map((item) => (
               <div key={item.post_id} className="flex items-center justify-between rounded-2xl border border-[#DCECF1] bg-[#F8FCFD] p-3">
                 <div>
                   <p className="font-medium text-primary">{item.title}</p>
@@ -969,6 +979,9 @@ function AnalyticsPage() {
                 <span className="badge bg-[#DDF3F4] text-primary">{Math.min(99, Math.round((item.total_views / Math.max(1, analytics.total_views)) * 100))}%</span>
               </div>
             ))}
+            {!analytics || analytics.top_posts.length === 0 ? (
+              <p className="text-sm text-primary/70">No analytics data available yet.</p>
+            ) : null}
           </div>
         </div>
       </section>
@@ -1579,8 +1592,8 @@ function PublicPostPage() {
 }
 
 const quickActions = [
-  { title: 'Write a new post', description: 'Draft a fresh article from your mobile or desktop editor.', action: 'Open editor' },
-  { title: 'Review analytics', description: 'Check engagement, retention, and top-performing content.', action: 'Open reports' },
+  { title: 'Write a new post', description: 'Draft a fresh article from your mobile or desktop editor.', action: 'Open editor', to: '/create-post' },
+  { title: 'Review analytics', description: 'Check engagement, retention, and top-performing content.', action: 'Open reports', to: '/analytics' },
   { title: 'Manage team access', description: 'Invite collaborators and assign publishing permissions.', action: 'Manage roles' },
 ];
 
